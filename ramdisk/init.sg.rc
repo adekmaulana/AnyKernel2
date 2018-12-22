@@ -1,0 +1,32 @@
+# Stormguard
+
+import /init.performance_profiles.rc
+
+# Everything here won't interfere with qcom-post-boot
+on property:sys.boot_completed=1
+
+   # Declare support for Franco Kernel Manager Performance Profiles
+   setprop fku.profiles 1
+
+   # Set bfq
+   setprop sys.io.scheduler bfq
+
+   # Disable slice_idle
+   write /sys/block/mmcblk0/queue/iosched/slice_idle 0
+   write /sys/block/mmcblk1/queue/iosched/slice_idle 0
+   write /sys/block/dm-0/queue/iosched/slice_idle 0
+   write /sys/block/dm-1/queue/iosched/slice_idle 0
+   write /sys/block/sda/queue/iosched/slice_idle 0
+
+# CPUQuiet
+   chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+   write /sys/devices/system/cpu/cpuquiet/nr_min_cpus 4
+   chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+
+# Must be executed after qcom-post-boot
+on property:init.svc.qcom-post-boot=stopped
+
+   # Set max freq following default profile
+   write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1804800
+
+   write /sys/block/mmcblk1/queue/read_ahead_kb 128
