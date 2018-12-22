@@ -1,0 +1,32 @@
+# CPUQuiet profiles for fk.manager
+# Copyright (C) 2018 Adek
+
+# Power saving
+on property:fku.perf.profile=0 && property:init.svc.qcom-post-boot=stopped
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1689600
+    chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+    write /sys/devices/system/cpu/cpuquiet/nr_min_cpus 3
+    chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+    chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_max_cpus
+    write /sys/devices/system/cpu/cpuquiet/nr_max_cpus 6
+    chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_max_cpus
+
+# Balanced (default)
+on property:fku.perf.profile=1 && property:init.svc.qcom-post-boot=stopped
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1804800
+    chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+    write /sys/devices/system/cpu/cpuquiet/nr_min_cpus 4
+    chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+    chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_max_cpus
+    write /sys/devices/system/cpu/cpuquiet/nr_max_cpus 8
+    chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_max_cpus
+
+# Performance
+on property:fku.perf.profile=2 && property:init.svc.qcom-post-boot=stopped
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2016000
+    chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+    write /sys/devices/system/cpu/cpuquiet/nr_min_cpus 6
+    chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_min_cpus
+    chmod 0644 /sys/devices/system/cpu/cpuquiet/nr_max_cpus
+    write /sys/devices/system/cpu/cpuquiet/nr_max_cpus 8
+    chmod 0664 /sys/devices/system/cpu/cpuquiet/nr_max_cpus
