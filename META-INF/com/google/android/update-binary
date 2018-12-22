@@ -22,7 +22,7 @@ debugging() {
   case $(basename "$ZIPFILE" .zip) in
     *-debugging)
       ui_print " ";
-      ui_print "Creating debugging archive in zip directory...";
+      ui_print " - Creating debugging archive in zip directory...";
       $bb tar -czvf "$DIR/anykernel2-$(date +%Y-%m-%d_%H%M%S)-debug.tgz" /tmp/*;
     ;;
   esac;
@@ -54,11 +54,32 @@ mkdir -p /tmp/anykernel/bin;
 cd /tmp/anykernel;
 unzip -o "$ZIPFILE";
 if [ $? != 0 -o -z "$(ls tools)" ]; then
-  abort "Unzip failed. Aborting...";
+  abort " ! Unzip failed. Aborting...";
 fi;
 bb=/tmp/anykernel/tools/busybox;
 chmod 755 $bb;
 $bb chmod -R 755 tools bin;
+
+if [ "$(basename "$ZIPFILE" .zip | grep -o OC)" == "OC" ]; then
+  OC=true;
+fi;
+if [ "$(basename "$ZIPFILE" .zip | grep -o CPUQuiet)" == "CPUQuiet" ]; then
+  CPUQUIET=true;
+fi;
+
+if [ -n "$OC" ] && [ -n "$CPUQUIET" ]; then
+  mv ramdisk/init.cpuquiet_oc.rc ramdisk/init.performance_profiles.rc;
+  rm -f ramdisk/init.{cpuquiet,normal,oc}*;
+elif [ -n "$OC" ] && [ -z "$CPUQUIET" ]; then
+  mv ramdisk/init.oc.rc ramdisk/init.performance_profiles.rc;
+  rm -f ramdisk/init.{cpuquiet,normal,oc}*;
+elif [ -z "$OC" ] && [ -n "$CPUQUIET" ]; then
+  mv ramdisk/init.cpuquiet_normal.rc ramdisk/init.performance_profiles.rc;
+  rm -f ramdisk/init.{cpuquiet,normal,oc}*;
+elif [ -z "$OC" ] && [ -z "$CPUQUIET" ]; then
+  mv ramdisk/init.normal.rc ramdisk/init.performance_profiles.rc;
+  rm -f ramdisk/init.{cpuquiet,normal,oc}*;
+fi;
 
 if [ -f banner ]; then
   while IFS='' read -r line || $bb [[ -n "$line" ]]; do
@@ -112,26 +133,26 @@ elif [ ! "$(getprop ro.product.device 2>/dev/null)" -a ! "$(getprop ro.build.pro
 fi;
 
 if [ "$(file_getprop anykernel.sh do.devicecheck)" == 1 ]; then
-  ui_print "Checking device...";
+  ui_print " - Checking device...";
   device="$(getprop ro.product.device)";
   product="$(getprop ro.build.product)";
   for testname in $(file_getprop anykernel.sh 'device.name.*'); do
     if [ "$device" == "$testname" -o "$product" == "$testname" ]; then
-      ui_print "$testname";
+      ui_print "   Device supported [$testname].";
       match=1;
       break;
     fi;
   done;
   ui_print " ";
   if [ ! "$match" ]; then
-    abort "Unsupported device. Aborting...";
+    abort " ! Unsupported device. Aborting...";
   fi;
 fi;
 
 int2float() { test "$1" -eq "$1" 2>/dev/null && $bb printf '%0.1f\n' "$1" || echo "$1"; }
 supported_ver="$(file_getprop anykernel.sh supported.versions | $bb tr -d '[:space:]')";
 if [ "$supported_ver" ]; then
-  ui_print "Checking Android version...";
+  ui_print " - Checking Android version...";
   android_ver="$(file_getprop /system/build.prop ro.build.version.release)";
   if [ "$(echo $supported_ver | $bb grep -)" ]; then
     lo_ver=$(echo $supported_ver | $bb cut -d- -f1);
@@ -148,20 +169,29 @@ if [ "$supported_ver" ]; then
     done;
   fi;
   if [ "$supported" ]; then
-    ui_print "$android_ver";
+    ui_print "   $android_ver";
     ui_print " ";
+    if [ "$(file_getprop /system/build.prop ro.treble.enabled)" == "true" ]; then
+      dtb=/tmp/anykernel/kernel/treble;
+    else
+      dtb=/tmp/anykernel/kernel/normal;
+    fi;
   else
     ui_print " ";
-    abort "Unsupported Android version. Aborting...";
+    abort " ! Unsupported Android version. Aborting...";
   fi;
 fi;
 
-ui_print "Installing...";
+ui_print " - Installing...";
 for i in $($bb --list); do
   $bb ln -s $bb bin/$i;
 done;
 if [ $? != 0 -o -z "$(ls bin)" ]; then
-  abort "Recovery busybox setup failed. Aborting...";
+  abort " ! Recovery busybox setup failed. Aborting...";
+fi;
+cat kernel/Image.gz $dtb/*.dtb > Image.gz-dtb
+if [ $? != 0 ]; then
+  abort;
 fi;
 PATH="/tmp/anykernel/bin:$PATH" $bb ash anykernel.sh $2;
 if [ $? != 0 ]; then
@@ -170,7 +200,7 @@ fi;
 
 if [ "$(file_getprop anykernel.sh do.modules)" == 1 ]; then
   ui_print " ";
-  ui_print "Pushing modules...";
+  ui_print " - Pushing modules...";
   $bb mount -o rw,remount -t auto /system;
   $bb mount -o rw,remount -t auto /vendor 2>/dev/null;
   cd /tmp/anykernel/modules;
@@ -213,5 +243,4 @@ test "$savedpre" && export LD_PRELOAD="$savedpre";
 unmount_all;
 
 ui_print " ";
-ui_print " ";
-ui_print "Done!";
+ui_print " - Done!";
